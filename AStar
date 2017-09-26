@@ -1,0 +1,444 @@
+import java.util.*;
+import java.io.*;
+
+class AStar {
+    public static final int DIAGONAL_COST = 14;
+    public static final int V_H_COST = 10;
+    
+    static class Cell
+    {  
+        int i;
+        int j;
+        int hC = 0; //Heuristic cost
+        int fC = 0; //G+H
+        
+        
+        Cell parent; 
+        
+        Cell(int i, int j)
+        {
+            this.i = i;
+            this.j = j; 
+        }
+        
+        @Override
+        public String toString(){
+            return "["+this.i+", "+this.j+"]";
+        }
+    }
+    
+    //Blocked cells are just null Cell values in grid
+    static Cell [][] grid = new Cell[5][5];
+    
+    static PriorityQueue<Cell> open;
+     
+    static boolean nope[][];
+    static int sI;
+    static int sJ;
+    static int eI;
+    static int eJ;
+            
+    public static void blockingCell(int i, int j){
+        grid[i][j] = null;
+    }
+    
+    public static void beginningCell(int i, int j){
+        sI = i;
+        sJ = j;
+    }
+    
+    public static void endingCell(int i, int j){
+        eI = i;
+        eJ = j; 
+    }
+    
+    static void checkAndUpdateCost(Cell current, Cell t, int cost){
+        if(t == null || nope[t.i][t.j])
+        {
+            return;
+        }
+        
+        int t_final_cost = t.hC+cost;
+        
+        boolean inOpen = open.contains(t);
+        if(!inOpen || t_final_cost<t.fC){
+            t.fC = t_final_cost;
+            t.parent = current;
+            if(!inOpen)
+            {
+               open.add(t);
+            }      
+        }
+    }
+    
+    public static void AStar(){ 
+        
+        //add the start location to open list.
+        open.add(grid[sI][sJ]);
+        
+        Cell current;
+        
+        while(true){ 
+            current = open.poll();
+            if(current==null)
+            {
+               break;
+            }
+            
+            nope[current.i][current.j]=true; 
+
+            if(current.equals(grid[eI][eJ]))
+            {
+                return; 
+            } 
+
+            Cell t;  
+            
+            if(current.i-1>=0)
+            {
+                t = grid[current.i-1][current.j];
+                
+                checkAndUpdateCost(current, t, current.fC+V_H_COST); 
+
+                if(current.j-1>=0)
+                {                      
+                    t = grid[current.i-1][current.j-1];
+                    checkAndUpdateCost(current, t, current.fC+DIAGONAL_COST); 
+                }
+
+                if(current.j+1<grid[0].length)
+                {
+                    t = grid[current.i-1][current.j+1];
+                    checkAndUpdateCost(current, t, current.fC+DIAGONAL_COST); 
+                }
+            } 
+
+            if(current.j-1>=0)
+            {
+                t = grid[current.i][current.j-1];
+                
+                checkAndUpdateCost(current, t, current.fC+V_H_COST); 
+            }
+
+            if(current.j+1<grid[0].length)
+            {
+                t = grid[current.i][current.j+1];
+                
+                checkAndUpdateCost(current, t, current.fC+V_H_COST); 
+            }
+
+            if(current.i+1<grid.length)
+            {
+                t = grid[current.i+1][current.j];
+                checkAndUpdateCost(current, t, current.fC+V_H_COST); 
+
+                if(current.j-1>=0)
+                {
+                    t = grid[current.i+1][current.j-1];
+                    checkAndUpdateCost(current, t, current.fC+DIAGONAL_COST); 
+                }
+                
+                if(current.j+1<grid[0].length)
+                {
+                   t = grid[current.i+1][current.j+1];
+                    checkAndUpdateCost(current, t, current.fC+DIAGONAL_COST); 
+                }  
+            }
+        } 
+    }
+    
+    /*
+    Params :
+    tCase = test case No.
+    x, y = Board's dimensions
+    si, sj = start location's x and y coordinates
+    ei, ej = end location's x and y coordinates
+    int[][] blocked = array containing inaccessible cell coordinates
+    */
+    public static void test(int tCase, int x, int y, int si, int sj, int ei, int ej, int[][] blocked){
+           System.out.println("\n\nTest Case #"+tCase);
+            //Reset
+           grid = new Cell[x][y];
+           nope = new boolean[x][y];
+           open = new PriorityQueue<>((Object o1, Object o2) -> {
+                Cell c1 = (Cell)o1;
+                Cell c2 = (Cell)o2;
+
+                return c1.fC<c2.fC?-1:
+                        c1.fC>c2.fC?1:0;
+            });
+           //Set start position
+           beginningCell(si, sj);  //Setting to 0,0 by default. Will be useful for the UI part
+           
+           //Set End Location
+           endingCell(ei, ej); 
+           
+           for(int i=0;i<x;++i)
+           {
+              for(int j=0;j<y;++j)
+              {
+                  grid[i][j] = new Cell(i, j);
+                  grid[i][j].hC = Math.abs(i-eI)+Math.abs(j-eJ);
+//                  System.out.print(grid[i][j].hC+" ");
+              }
+//              System.out.println();
+           }
+           grid[si][sj].fC = 0;
+           
+           /*
+             Set blocked cells. Simply set the cell values to null
+             for blocked cells.
+           */
+           for(int i=0;i<blocked.length;++i)
+           {
+               blockingCell(blocked[i][0], blocked[i][1]);
+           }
+           
+           //Display initial map
+           System.out.println("Grid: ");
+            for(int i=0;i<x;++i)
+            {
+                for(int j=0;j<y;++j)
+                {
+                   if(i==si&&j==sj)
+                   {
+                        System.out.print("SO  "); //Source
+                   }
+                   else if(i==ei && j==ej)
+                   {
+                        System.out.print("DE  ");  //Destination
+                   }     
+                   else if(grid[i][j]!=null)
+                   {     
+                        System.out.printf("%-3d ", 0);
+                   }     
+                   else 
+                   {
+                        System.out.print("BL  ");
+                   }      
+                }
+                System.out.println();
+            } 
+            System.out.println();
+           
+           AStar(); 
+           System.out.println("\nScores for cells: ");
+           for(int i=0;i<x;++i)
+           {
+               for(int j=0;j<x;++j)
+               {
+                   if(grid[i][j]!=null)
+                   {
+                        System.out.printf("%-3d ", grid[i][j].fC);
+                   }     
+                   else 
+                   {
+                        System.out.print("BL  ");
+                   }     
+               }
+               System.out.println();
+           }
+           System.out.println();
+            
+           if(nope[eI][eJ])
+           {
+               //Trace back the path 
+                System.out.println("Path: ");
+                Cell current = grid[eI][eJ];
+                System.out.print(current);
+                while(current.parent!=null)
+                {
+                    System.out.print(" -> "+current.parent);
+                    current = current.parent;
+                } 
+                System.out.println();
+           }else
+           {
+             System.out.println("No possible path");
+           }  
+    }
+     
+    public static void main(String[] args)
+    {
+      try
+      {
+      int l = 0;
+      int n = 50;
+      int xycounter = 0;
+      int linecounter = 0;
+      int maxvaluex = 0;
+      int maxvaluey = 0;
+      int totalvariables = 0;
+      int sx = 0;
+      int sy = 0;
+      int fx = 0;
+      int fy = 0;
+      int startx = 0;
+      int starty = 0;
+      int endx = 0;
+      int endy = 0;
+      List<String> lines = new LinkedList<String>(); // create a new list
+      //List<Point> polygons = new ArrayList<Point>();
+      //make a 'file' object 
+      File file = new File("map1.txt");
+      //Get data from this file using a file reader. 
+      FileReader fr = new FileReader(file);
+      //To store the contents read via File Reader
+      BufferedReader br = new BufferedReader(fr);   
+      
+      int a[] = new int[1000];
+      int b[] = new int[1000];
+      for (String line = br.readLine(); line != null; line = br.readLine()) 
+      {
+       
+       String str = line.replaceAll(",", "");
+       String lmfao = str.replaceAll(";", "");
+       lines.add(lmfao);
+       
+       
+      
+      }
+      
+      
+      // create an array and copy the list to it
+       Object[] array = lines.toArray();
+       String[] arrays = Arrays.asList(array).toArray(new String[array.length]);
+       
+       for(int x = 0; x < arrays.length; x++)
+       {
+          System.out.println(arrays[x]);
+       } 
+       
+       for(String t : arrays) 
+       {
+         String[] s1 = t.split(" ");
+         
+             
+               for (int k = 0; k < s1.length; k+=2)
+               { 
+                 b[k]=Integer.valueOf(s1[k]);
+                 
+                 if(maxvaluex < b[k])
+                 {
+                   maxvaluex = b[k];
+                 } 
+                 
+               }
+               
+               b = new int[1000];
+               
+               for (int k = 1; k < s1.length; k+=2)
+               { 
+                 b[k]=Integer.valueOf(s1[k]);
+                 
+                 if(maxvaluey < b[k])
+                 {
+                   maxvaluey = b[k];
+                 } 
+                 
+               }  
+ 
+       }
+       
+       int rows = maxvaluex + 5;
+       int cols = maxvaluey + 5;
+       
+       
+       for(String s : arrays) 
+       {
+         String[] s2 = s.split(" ");
+         
+             
+               for (int h = 0; h < s2.length; h++)
+               { 
+                  totalvariables++;
+               }
+               
+               System.out.println("TOTAL VARIABLES " + totalvariables);
+             
+               for (int k = 0; k < s2.length; k++)
+               { 
+                 a[k]=Integer.valueOf(s2[k]);
+                 
+                               
+                  //System.out.println(a[k]);
+                 if(linecounter == 0)
+                 {
+                  System.out.println("Start");
+                  if(xycounter%2==0)
+                  {
+                     startx = a[k];
+                     System.out.println("This is the x value" + a[xycounter]);
+                  }
+                  
+                  if(xycounter%2==1)
+                  {
+                     starty = a[k];
+                     System.out.println("This is the y value" + a[xycounter]);
+                  }
+                  xycounter++;
+                 }
+                 
+                 if(linecounter == 1)
+                 {
+                  System.out.println("End");
+                  if(xycounter%2==0)
+                  {
+                     endx = a[k];
+                     System.out.println("This is the x value" + a[xycounter]);
+                  }
+                  
+                  if(xycounter%2==1)
+                  {
+                     endy = a[k];
+                     System.out.println("This is the y value" + a[xycounter]);
+                  }
+                  xycounter++;
+                 }               
+                  
+               }
+               
+               if(linecounter > 1)
+               {
+                  
+                  for(int j = 0; j < totalvariables; j+= 2)
+                  {
+                        sx = a[j];
+                        sy = a[j+1];
+                        fx = a[j+2];
+                        fy = a[j+3];
+                        System.out.println("X1 " + sx);
+                        System.out.println("Y1 " + sy);
+                        System.out.println("X2 " + fx);
+                        System.out.println("Y2 " + fy);
+                       // Bresenham q = new Bresenham();
+                        //polygons = q.findLine(grid, sx, sy, fx, fy);
+                        //q.plot(grid, polygons);
+                        
+                  }
+                  
+               }     
+         //System.out.println(polygons);     
+         linecounter++;    
+         System.out.println("");
+         xycounter = 0;
+         totalvariables = 0;
+         a = new int[1000];
+         s2 = new String[0];    
+         
+       }
+       test(1, maxvaluex, maxvaluey, startx, starty, endx, endy, new int[][]{{3,4},{3,3},{4,3}});
+       System.out.println("Max Value X " + maxvaluex);
+       System.out.println("Max Value Y " + maxvaluey);
+      
+      }catch(IOException e){
+      System.out.println("bad !");
+      
+ 
+      }
+     
+       
+        
+       
+    }
+}
