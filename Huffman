@@ -1,0 +1,688 @@
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.Scanner;
+import java.util.Stack;
+
+public class n00909557
+{
+	public static void main(String[] args)
+	{
+		//Read in a file from the command line and extract all the
+		//characters in the file.
+
+		String filePath = args[0];
+        
+	    try
+		{	
+	    	ArrayList charactersFromFile = new ArrayList();
+	    	
+	    	File file = new File(filePath);
+	    	boolean validCharactersFound = false;
+	    	
+	    	FileInputStream fstream = new FileInputStream(file);
+	    	char currentChar;
+		    
+	    	//Read in all the characters only adding them to the array if 
+	    	//they are valid characters A-G.
+	    	try
+	    	{
+	    		while(fstream.available() >0)
+	    		{
+	    			currentChar = (char)fstream.read();
+                    
+	    			if(currentChar == 'A' || currentChar == 'B' ||
+	    			   currentChar == 'C' || currentChar == 'D' ||
+	    			   currentChar == 'E' || currentChar == 'F' ||
+	 				   currentChar == 'G')
+	    			{
+	    			
+	    			    charactersFromFile.add(currentChar);
+	    				validCharactersFound = true;
+	    			}
+	    		}
+	    		
+	    		if(validCharactersFound == true)
+	    		{
+	    		//Pass of the array of valid characters to the Huffman
+	    		//tree to begin work.
+	    		HuffmanTree huffTree = new HuffmanTree(charactersFromFile);
+	    		fstream.close();
+	    		}
+	    		
+	    		if(validCharactersFound == false)
+	    		{
+	    			System.out.println("No valid characters were found."
+	    					+ " The program will now exit.");
+	    		}
+	    	}
+	    	
+	    	catch(Exception e)
+	    	{
+	    		e.printStackTrace();
+	    	}
+			
+		}
+		
+		catch (FileNotFoundException e)
+		{
+			e.printStackTrace();
+		}
+	}
+}
+
+/*****************************************************************************/
+//NAME: Huffman Tree
+//DESCRIPTION: Contains all the major operations dicated by the assignment. 
+//Frequency counts, priority queue tree merge,and tree traversal is all done in
+//this class.
+/*****************************************************************************/
+class HuffmanTree
+{
+	private ArrayList charactersInFile;
+	private ArrayList huffmanCodePath;
+	private ArrayList printCodeToConsoleArray;
+	private final int LEFT = 0;
+	private final int RIGHT = 1;
+	private ArrayList codedFile;
+	private Tree finalTree;
+	
+	public HuffmanTree(ArrayList charsFromFile)
+	{
+        BuildFrequencyTables(charsFromFile);
+	}
+	
+	/*************************************************************************/
+	//NAME: Build Frequency Tables
+	//DESCRIPTION: This method will receive all the valid charactesr from the
+	//file and extract a char one at a time, incrementing the appropriate
+	//char frequency if that valid char is in the file.
+	/*************************************************************************/
+	public void BuildFrequencyTables(ArrayList charsFromFile)
+	{
+		int AFrequency =0, BFrequency = 0, CFrequency = 0, DFrequency = 0,
+        EFrequency = 0, FFrequency =0, GFrequency = 0;
+		
+		//Check the file character by characer incrementing respective
+		//counters along the way if valid chars are present.
+		for(int i = 0; i < charsFromFile.size(); i++)
+		{
+			switch((Character)charsFromFile.get(i))
+			{
+				case 'A':
+					AFrequency++;
+					break;
+					
+				case 'B':
+					BFrequency++;
+					break;
+					
+				case 'C':
+					CFrequency++;
+					break;
+					
+				case 'D':
+					DFrequency++;
+					break;
+					
+				case 'E':
+					EFrequency++;
+					break;
+					
+				case 'F':
+					FFrequency++;
+					break;
+					
+				case 'G':
+					GFrequency++;
+					break;
+			}
+		}
+		
+		//Build the tree node for each frequency table that is
+		//greater than 0
+		Tree ATree; Tree BTree; Tree CTree; Tree DTree; Tree ETree; Tree FTree;
+		Tree GTree;
+		PriorityQueue treeQueue = new PriorityQueue();
+		huffmanCodePath = new ArrayList();
+		codedFile = new ArrayList();
+		printCodeToConsoleArray = new ArrayList();
+		
+		//If any frequency counters are greater than zero, create a new 
+		//tree. New Tree contains the letter and the frequency of the letter
+		//Then, insert the tree into the priority queue, the priority queue
+		//keeps the trees sorted so that the loweset frequencies are 
+		//first in line.
+		if(AFrequency> 0)
+		{
+			ATree = new Tree();
+			ATree.insert('A', AFrequency);
+			treeQueue.InsertSmallestFrequenyFirst(ATree);
+		}
+		
+		if(BFrequency > 0)
+		{
+			BTree = new Tree();
+			BTree.insert('B', BFrequency);
+			treeQueue.InsertSmallestFrequenyFirst(BTree);
+		}
+		
+		if(CFrequency > 0)
+		{
+			CTree = new Tree();
+			CTree.insert('C', CFrequency);
+			treeQueue.InsertSmallestFrequenyFirst(CTree);
+		}
+		
+		if(DFrequency > 0)
+		{
+			DTree = new Tree();
+			DTree.insert('D', DFrequency);
+			treeQueue.InsertSmallestFrequenyFirst(DTree);
+		}
+		
+		if(EFrequency > 0)
+		{
+			ETree = new Tree();
+			ETree.insert('E', EFrequency);
+			treeQueue.InsertSmallestFrequenyFirst(ETree);
+		}
+		
+		if(FFrequency > 0)
+		{
+			FTree = new Tree();
+			FTree.insert('F', FFrequency);
+			treeQueue.InsertSmallestFrequenyFirst(FTree);
+		}
+		
+		if(GFrequency > 0)
+		{
+			GTree = new Tree();
+			GTree.insert('G', GFrequency);
+			treeQueue.InsertSmallestFrequenyFirst(GTree);
+		}
+        
+		//Merge trees will 
+		//1. Pop two trees from the priority queue
+		//2. Sum their frequencies and assign this new sum as a frequency
+		//of a new tree root. 
+		//3. The two trees popped from the queue will become children of this
+		//new root tree.
+		//4. The root tree will be inserted back into the priority queue.
+		this.MergeTrees(treeQueue);
+		
+		//Once done will be the final tree with all sub trees contained
+		//under one root node. 
+        finalTree = treeQueue.PopFromFront();
+        
+        //1. Display the tree
+        DisplayTree(finalTree);
+        
+		Node localRoot = finalTree.getNode();
+		
+		//2. Display the frequency codes
+		PreOrderTraversal(localRoot);
+        
+		//3. Display the compressed bytes.
+		DisplayCodedPortionOfFile();
+		
+		//4. Use the saved codes to navigate to and display the
+		//individual letters in the tree.
+		UseHuffmanCodeToFindLettersInTree();
+		    
+	}
+	
+	/*************************************************************************/
+	//NAME: Display Coded Portion Of File
+	//DESCRIPTION: Will display all the bits in the file, 3 bytes per line.
+	/*************************************************************************/
+	public void DisplayCodedPortionOfFile()
+	{
+		int bitCounter = 0;
+		int byteCounter = 0;
+		System.out.println("\n\n***************Coded Huffman Message**********"
+                           + "*****");
+		for(int i = 0; i < printCodeToConsoleArray.size(); i++)
+		{
+			System.out.print(printCodeToConsoleArray.get(i));
+			bitCounter++;
+			
+			if(bitCounter == 8)
+			{
+				bitCounter = 0;
+				System.out.print(" ");
+				byteCounter++;
+			}
+			
+			if(byteCounter == 3)
+			{
+				byteCounter = 0;
+				System.out.print("\n");
+			}
+		}
+		System.out.println("");
+	}
+	
+	/*************************************************************************/
+	//NAME: Use Huffman Code To Fine Letters In Tree
+	//DESCRIPTION: This method uses the huffman codes to then navigate down
+	//through the tree and display all the characters in the tree.
+	/*************************************************************************/
+	public void UseHuffmanCodeToFindLettersInTree()
+	{
+		System.out.println("\n\n******* Using huffman codes "
+                    + "to print back original file characters *******");
+		
+		ArrayList tempArray = new ArrayList();
+		
+		Node traversalNode = finalTree.getNode();
+		
+		//Grab code by code
+		for(int i = 0; i < codedFile.size(); i++)
+		{
+			tempArray = (ArrayList) codedFile.get(i);
+			 
+			//Iterator through the currently selected code going
+			//Left or Right. Character will be at the leaf, print it once
+			//reached and run again with another code until all codes have
+			//been run.
+			for(int j = 0; j < tempArray.size(); j++)
+			{
+                
+				if((Integer)tempArray.get(j) == LEFT)
+				{
+					traversalNode = traversalNode.leftChild;
+				}
+				
+				else if((Integer)tempArray.get(j) == RIGHT)
+				{
+					traversalNode = traversalNode.rightChild;
+				}
+			}
+			
+			System.out.println(traversalNode.letter);
+			//Point back to root
+			traversalNode = finalTree.getNode();
+		}
+	}
+	
+	/*************************************************************************/
+	//NAME: Display Tree
+	//DESCRIPTION: Lafore's implementation of a way to display the tree to
+	//the console.
+	/*************************************************************************/
+	public void DisplayTree(Tree _finalTree)
+	{
+		Stack globalStack = new Stack();
+		Node tempRoot = _finalTree.getNode();
+		globalStack.push(tempRoot);
+		int nBlanks = 32;
+		boolean isRowEmpty = false;
+		System.out.println(".............................."
+				+ ".............................");
+		while(isRowEmpty == false)
+		{
+			Stack localStack = new Stack();
+			isRowEmpty = true;
+			
+			for(int j= 0; j < nBlanks; j++)
+			{
+				System.out.print(' ');
+			}
+			
+			while(globalStack.isEmpty() == false)
+			{
+				Node temp = (Node)globalStack.pop();
+				if(temp != null)
+				{
+					System.out.print(temp.letter);
+					System.out.print(temp.characterFrequency);
+					localStack.push(temp.leftChild);
+					localStack.push(temp.rightChild);
+					
+					if(temp.leftChild != null || temp.rightChild != null)
+					{
+						isRowEmpty = false;
+					}
+				}
+                
+				else
+				{
+					System.out.print("..");
+					localStack.push(null);
+					localStack.push(null);
+				}
+                
+				for(int j = 0; j < nBlanks*2 -2; j++)
+				{
+					System.out.print(' ');
+				}
+				
+			}
+			System.out.println();
+			nBlanks /= 2;
+			while(localStack.isEmpty() == false)
+			{
+				globalStack.push(localStack.pop());
+			}
+		}
+		System.out.println("................................"
+				+ "...........................");
+	}
+	
+	/*************************************************************************/
+	//NAME: Merge Trees
+	//DESCRIPTION: Continually pops to trees from the queue and merges them
+	//together into one tree and inserts the one new tree back into the 
+	//priority queue. This continues to happen until there is only one final
+	//tree remaining.
+	/*************************************************************************/
+	public void MergeTrees(PriorityQueue _treeQueue)
+	{
+		Tree tempTreeOne; Tree tempTreeTwo;
+		while(_treeQueue.getQueueSize() > 1)
+		{
+			//New left
+			tempTreeOne = _treeQueue.PopFromFront();
+			//New right child
+			tempTreeTwo = _treeQueue.PopFromFront();
+			
+			Tree mergedTree = new Tree();
+			mergedTree.mergeNodes(tempTreeOne, tempTreeTwo);
+			
+			_treeQueue.InsertSmallestFrequenyFirst(mergedTree);
+		}
+	}
+	
+	/*************************************************************************/
+	//NAME: Pre Order Traversal
+	//DESCRIPTION: This method recursively traverses the tree, printing letters
+	//if they are found and along with their huffman codes.
+	/*************************************************************************/
+	public void PreOrderTraversal( Node _localRoot)
+	{
+		
+		if(_localRoot != null)
+		{
+			
+			//We are at a leaf and there is a letter, Print the letter and
+			//Print the corresponding huffman code for this letter.
+			if(_localRoot.hasLetter == true)
+			{
+				System.out.println("*********************************"
+						+ "*******************************");
+				System.out.print("The letter and frequency for this node is: "
+						    +_localRoot.letter + _localRoot.characterFrequency);
+		        
+				System.out.print("   ");
+				
+				for(int i = 0; i < _localRoot.huffmanCode.size(); i++)
+				{
+					System.out.print(_localRoot.huffmanCode.get(i));
+					printCodeToConsoleArray.add(_localRoot.huffmanCode.get(i));
+					
+				}
+				
+				System.out.println("");
+				
+				//codedFile contains individual codes that will be used
+				//to trace back down to individual letters in the tree.
+				//It looks something like this
+				// {0, 1, 1, 0, 1}
+				// {0  0  1, 1,}
+				//Containting full codes for each char.
+				codedFile.add(_localRoot.huffmanCode);
+				
+				
+			}
+			
+			PreOrderTraversal(_localRoot.leftChild);
+			
+			PreOrderTraversal(_localRoot.rightChild);
+			
+		}
+	}
+}
+
+/*****************************************************************************/
+//NAME: Class Node
+//DESCRIPTION: Contains the public properties mainly including letter,
+//frequency, and if the node has a letter meaning it is a leaf or a root.
+/*****************************************************************************/
+class Node
+{
+	public char letter;
+	public int characterFrequency;
+	public Node leftChild;
+	public Node rightChild;
+	public boolean hasLetter;
+	public ArrayList huffmanCode;
+
+	public Node()
+	{
+		huffmanCode = new ArrayList();
+	}
+}
+
+/*****************************************************************************/
+//NAME: Link
+//DESCRIPTION: Individual links are trees of nodes that are stored in the
+//priority queue.
+/*****************************************************************************/
+class Link
+{
+	public Tree treeObj;
+	public Link next;
+    
+	public Link(Tree obj)
+	{
+		this.treeObj = obj;
+	}
+	
+	public int returnTreeFrequency()
+	{
+		return treeObj.getNodeFrequency();
+	}
+	
+	public char returnTreeLetter()
+	{
+		return treeObj.getNodeLetter();
+	}
+	
+	public Tree getTree()
+	{
+		return treeObj;
+	}
+}
+
+/*****************************************************************************/
+//NAME: Priority Queue
+//DESCRIPTION: This class will keep track of a priority queue of sorted trees.
+//Trees have nodes in them. Lowest frequencies will be at the front of the
+//queue.
+/*****************************************************************************/
+class PriorityQueue
+{
+	private Link first;
+	private Link previous;
+	private Link current;
+	private int queueSize;
+	
+	public int getQueueSize()
+	{
+		return queueSize;
+	}
+	
+	public PriorityQueue()
+	{
+		first = null;
+		previous = null;
+		queueSize = 0;
+	}
+	
+	public Tree PopFromFront()
+	{
+		Tree temp = first.getTree();
+		first = first.next;
+		queueSize--;
+		return temp;
+	}
+	
+	/*************************************************************************/
+	//NAME: Insert Smalles Frequency First
+	//DESCRIPTION: Keeps the priority queue sorted eatch time an item is
+	//inseted. Items are sorted by character frequency, with lower numbers
+	//kept at the front and higher numbers at the back.
+	/*************************************************************************/
+	public void InsertSmallestFrequenyFirst(Tree obj)
+	{
+		Link newLink = new Link(obj);
+		previous = null;
+		current = first;
+		
+		while(current != null && obj.getNodeFrequency() > 
+		                                         current.returnTreeFrequency())
+		{
+			previous = current;
+			current = current.next;
+		}
+		
+		if(previous == null)
+		{
+			first = newLink;
+		}
+		
+		else
+		{
+			previous.next = newLink;
+		}
+		
+		newLink.next = current;
+		
+		queueSize++;
+	}
+}
+
+/*****************************************************************************/
+//NAME: Tree
+//DESCRIPTION: Trees will contain Nodes as their children. Root has no
+//character, and the leaves of tress will contain characters.
+/*****************************************************************************/
+class Tree
+{
+	private Node root;
+	private final int LEFT = 0;
+	private final int RIGHT = 1;
+	private Node tempLeftSubTree;
+	private Node tempRightSubTree;
+	
+	public Tree()
+	{
+		root = null;
+	}
+	
+	/*************************************************************************/
+	//NAME: Merge Nodes
+	//DESCRIPTION: Creates a new node, assigns the new nodes left and right
+	//children to the two trees that were popped off of the priority queue.
+	/*************************************************************************/
+	public void mergeNodes(Tree leftTreeNode, Tree rightTreeNode)
+	{
+		this.root = new Node();
+		root.leftChild = leftTreeNode.getNode();
+		root.rightChild = rightTreeNode.getNode();
+		
+		tempLeftSubTree = leftTreeNode.getNode();
+		tempRightSubTree = rightTreeNode.getNode();
+		
+		if(tempLeftSubTree.hasLetter == false)
+		{
+			tempLeftSubTree = preOrderLeftSubTree(tempLeftSubTree);
+		}
+		
+		if(tempLeftSubTree.hasLetter == true)
+		{
+			tempLeftSubTree.huffmanCode.add(0, LEFT);
+		}
+		
+		if(tempRightSubTree.hasLetter == false)
+		{
+			tempRightSubTree = preOrderRightSubTree(tempRightSubTree);
+		}
+		
+		if(tempRightSubTree.hasLetter == true)
+		{
+			tempRightSubTree.huffmanCode.add(0, RIGHT);
+		}
+		
+		this.root.characterFrequency += leftTreeNode.getNodeFrequency()
+				                       + rightTreeNode.getNodeFrequency();
+	}
+	
+	/*************************************************************************/
+	//NAME: Pre Order Right Sub Tree
+	//DESCRIPTION: Recursively marches down the right subtree appending 1s
+	//to the begining of the node huffman codes.
+	/*************************************************************************/
+	private Node preOrderRightSubTree(Node _tempRightSubTree)
+	{
+		if(_tempRightSubTree != null)
+		{
+			preOrderRightSubTree(_tempRightSubTree.leftChild);
+			_tempRightSubTree.huffmanCode.add(0, RIGHT);
+			
+			
+			preOrderRightSubTree(_tempRightSubTree.rightChild);
+		}
+		
+		return _tempRightSubTree;
+	}
+	
+	/*************************************************************************/
+	//NAME: Pre Order Left Subtree
+	//DESCRIPTION: Recursively marches down the left sub tree appending 0s to
+	//the beginning of the node huffman codes.
+	/*************************************************************************/
+	public Node preOrderLeftSubTree(Node _tempLeftSubTree)
+	{
+		if(_tempLeftSubTree != null)
+		{
+			_tempLeftSubTree.huffmanCode.add(0, LEFT);
+			preOrderLeftSubTree(_tempLeftSubTree.leftChild);
+			
+			preOrderLeftSubTree(_tempLeftSubTree.rightChild);
+		}
+		
+		return _tempLeftSubTree;
+	}
+	
+	public Node getNode()
+	{
+		return root;
+	}
+	
+	public void insert(char letter, int frequency)
+	{
+		Node newNode = new Node();
+		newNode.characterFrequency = frequency;
+		newNode.letter = letter;
+		newNode.hasLetter = true;
+		
+		if(root == null)
+		{
+            root = newNode;
+		}
+	}
+	
+	public char getNodeLetter()
+	{
+		return root.letter;
+	}
+    
+	public int getNodeFrequency()
+	{
+		return root.characterFrequency; 
+	}
+}
